@@ -2,13 +2,18 @@ package tests
 
 import "../quarto"
 import "testing"
-
-//func TestNewBoard(t *testing.T) {
-
-//}
+import "reflect"
 
 func TestBoardEquality(t *testing.T) {
-	if quarto.NewBoard("test") != quarto.NewBoard("test") {
+	if !reflect.DeepEqual(quarto.NewBoard("test"), quarto.NewBoard("test")) {
 		t.Fail()
+	}
+}
+
+func TestValidate(t *testing.T) {
+	board := quarto.NewBoard("test")
+	valid, error := board.Validate()
+	if !valid {
+		t.Errorf(error.Error())
 	}
 }
