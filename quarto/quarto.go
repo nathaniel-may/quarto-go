@@ -10,102 +10,154 @@ type Square struct {
 	V int
 }
 
+type line struct {
+	line string
+	attr string
+}
+
 type board struct {
 	id string
 	squares map[Square]Piece
 	pieces map[Piece]bool
-	lines map[string]int
+	lines map[line]int
 	active Piece
 }
 
 type Quarto interface {
-	isWon() bool
-	TakeTurn(toPlace piece, h int, v int, active piece) Quarto
-	Nil()
+	Nil() Quarto
+	IsWon() bool
+	TakeTurn(toPlace Piece, h int, v int, active Piece) (Quarto, error)
+	Validate() (bool, error)
+	setSquares(squares map[Square]Piece)
+	setPieces(pieces map[Piece]bool)
+	setLines(lines map[line]int)
+	setActive(piece Piece)
+
 }
 
-func (board *board) Nil() *board {
+func (board *board) Nil() Quarto {
 	return NewBoard("nil")
 }
 
-func (board *board) isWon() bool{
-	//TODO
+func (board *board) IsWon() bool{
+	for _, count := range board.lines{
+		if count >= 4 {
+			return true
+		}
+	}
 	return false
 }
 
-func (board board) TakeTurn(toPlace Piece, h int, v int, active Piece) (board, error) {
+func (board board) TakeTurn(toPlace Piece, h int, v int, active Piece) (Quarto, error) {
 	if board.pieces[toPlace] == true {
-		return *board.Nil(), errors.New("the placed piece is already on the board")
+		return board.Nil(), errors.New("the placed piece is already on the board")
 	}
 	if board.pieces[active] == true {
-		return *board.Nil(), errors.New("the active piece is already on the board")
+		return board.Nil(), errors.New("the active piece is already on the board")
 	}
 	if _, ok := board.squares[Square {h,v}]; ok {
-		return *board.Nil(), errors.New("the square is already occupied")
+		return board.Nil(), errors.New("the square is already occupied")
 	}
 	if board.active != Pieces.ZERO && board.active != toPlace {
-		return *board.Nil(), errors.New("must place the active piece")
+		return board.Nil(), errors.New("must place the active piece")
 	}
 
 	board.squares[Square {h,v}] = toPlace
 	board.pieces[toPlace] = true
 	board.active = active
-	for _, line := range getLines(h, v) {
+	for _, line := range getLines(toPlace, h, v) {
 		board.lines[line]++
 	}
+	_, error := board.Validate()
+	if error != nil {
+		return board.Nil(), error
+	}
 
-	return board, nil
+	return &board, nil
 }
 
 func (board *board) Validate() (bool, error) {
-	if Pieces.ZERO == board.active && len(board.squares) != 0 && !board.isWon() {
+	if Pieces.ZERO == board.active && len(board.squares) != 0 && !board.IsWon() {
 		return false, errors.New("active piece required")
+	}
+	if board.active == Pieces.ZERO && len(board.pieces) != 0 && !board.IsWon(){
+		return false, errors.New("cannot set ZERO piece as active unless the game is won")
 	}
 	//TODO other probs
 	return true, nil
 }
 
-func (board *board) setSquares(squares *map[Square]Piece) {
-	board.squares = *squares
+func (board *board) setSquares(squares map[Square]Piece) {
+	board.squares = squares
 }
 
-func NewBoard(id string) *board {
-	return &board {id, make(map[Square]Piece), make(map[Piece]bool), make(map[string]int), Pieces.ZERO}
+func (board *board) setPieces(pieces map[Piece]bool) {
+	board.pieces = pieces
 }
 
-func InProgBoard(id string, squares *map[Square]Piece, active Piece) board {
+func (board *board) setLines(lines map[line]int) {
+	board.lines = lines
+}
+
+func (board *board) setActive(piece Piece) {
+	board.active = piece
+}
+
+func NewBoard(id string) Quarto {
+	return &board {id, make(map[Square]Piece), make(map[Piece]bool), make(map[line]int), Pieces.ZERO}
+}
+
+func InProgBoard(id string, squares map[Square]Piece, active Piece) Quarto {
 	board := NewBoard(id)
 	board.setSquares(squares)
 	pieces := make(map[Piece]bool)
-	lines := make(map[string]int)
-	for square, piece := range *squares {
+	lines := make(map[line]int)
+	for square, piece := range squares {
 		pieces[piece]=true
-		for _, line := range getLines(square.H, square.V) {
+		for _, line := range getLines(piece, square.H, square.V) {
 			lines[line]++
 		}
 	}
-	board.pieces = pieces
-	board.lines = lines
-	board.active = active
+	board.setPieces(pieces)
+	board.setLines(lines)
+	board.setActive(active)
 	board.Validate()
-	return *board
+	return board
 }
 
-func getLines(h int, v int) []string{
-	var lines []string
-	lines = append(lines, "h" + strconv.Itoa(h))
-	lines = append(lines, "v" + strconv.Itoa(v))
+func getLines(piece Piece, h int, v int) []line{
+	var lines []line
+	hline := "h" + strconv.Itoa(h)
+	vline := "v" + strconv.Itoa(v)
+	var dline string
 
 	if h == v {
-		lines = append(lines, "d" + strconv.Itoa(h))
+		dline = "d1"
 	} else if h == 1 && v == 4 {
-		lines = append(lines, "d2")
+		dline = "d2"
 	} else if h == 2 && v == 3 {
-		lines = append(lines, "d2")
+		dline = "d2"
 	} else if h == 3 && v == 2 {
-		lines = append(lines, "d2")
+		dline = "d2"
 	} else if h == 4 && v == 1 {
-		lines = append(lines, "d2")
+		dline = "d2"
+	}
+
+	lines = append(lines, line{hline, piece.getColor()})
+	lines = append(lines, line{hline, piece.getHeight()})
+	lines = append(lines, line{hline, piece.getShape()})
+	lines = append(lines, line{hline, piece.getTop()})
+
+	lines = append(lines, line{vline, piece.getColor()})
+	lines = append(lines, line{vline, piece.getHeight()})
+	lines = append(lines, line{vline, piece.getShape()})
+	lines = append(lines, line{vline, piece.getTop()})
+
+	if dline != "" {
+		lines = append(lines, line{dline, piece.getColor()})
+		lines = append(lines, line{dline, piece.getHeight()})
+		lines = append(lines, line{dline, piece.getShape()})
+		lines = append(lines, line{dline, piece.getTop()})
 	}
 
 	return lines
