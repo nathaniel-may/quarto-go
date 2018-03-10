@@ -3,6 +3,8 @@ package quarto
 import (
 	"errors"
 	"strconv"
+	"fmt"
+	"reflect"
 )
 
 type Square struct {
@@ -12,7 +14,7 @@ type Square struct {
 
 type line struct {
 	line string
-	attr string
+	attr Attribute
 }
 
 type board struct {
@@ -24,10 +26,11 @@ type board struct {
 }
 
 type Quarto interface {
-	Nil() Quarto
 	IsWon() bool
 	TakeTurn(toPlace Piece, h int, v int, active Piece) (Quarto, error)
 	Validate() (bool, error)
+	GetActive() Piece
+	String() string
 	setSquares(squares map[Square]Piece)
 	setPieces(pieces map[Piece]bool)
 	setLines(lines map[line]int)
@@ -35,52 +38,57 @@ type Quarto interface {
 
 }
 
-func (board *board) Nil() Quarto {
-	return NewBoard("nil")
-}
-
 func (board *board) IsWon() bool{
-	for _, count := range board.lines{
+	for line, count := range board.lines{
+		//TODO DELETE THIS PRINT
+		fmt.Println("line: ", line.line, " attr: ", line.attr.AttrStr(), " count: ", count)
 		if count >= 4 {
 			return true
 		}
 	}
+	fmt.Println("****************************************")
 	return false
 }
 
 func (board board) TakeTurn(toPlace Piece, h int, v int, active Piece) (Quarto, error) {
 	if board.pieces[toPlace] == true {
-		return board.Nil(), errors.New("the placed piece is already on the board")
+		return NilBoard(), errors.New("the placed piece is already on the board")
 	}
 	if board.pieces[active] == true {
-		return board.Nil(), errors.New("the active piece is already on the board")
+		return NilBoard(), errors.New("the active piece is already on the board")
 	}
 	if _, ok := board.squares[Square {h,v}]; ok {
-		return board.Nil(), errors.New("the square is already occupied")
+		return NilBoard(), errors.New("the square is already occupied")
 	}
-	if board.active != Pieces.ZERO && board.active != toPlace {
-		return board.Nil(), errors.New("must place the active piece")
+	if reflect.DeepEqual(board.GetActive(), NilPiece()) && reflect.DeepEqual(board.GetActive(), toPlace) {
+		//TODO: DELETE THESE PRINT LINES
+		if reflect.DeepEqual(board.GetActive(), NilPiece()) {
+			fmt.Println("active isn't nil")
+		}
+		fmt.Println("board.GetActive(): ", board.GetActive())
+		fmt.Println("toPlace: ", toPlace)
+		return NilBoard(), errors.New("must place the active piece")
 	}
 
 	board.squares[Square {h,v}] = toPlace
 	board.pieces[toPlace] = true
-	board.active = active
+	board.setActive(active)
 	for _, line := range getLines(toPlace, h, v) {
 		board.lines[line]++
 	}
 	_, error := board.Validate()
 	if error != nil {
-		return board.Nil(), error
+		return NilBoard(), error
 	}
 
 	return &board, nil
 }
 
 func (board *board) Validate() (bool, error) {
-	if Pieces.ZERO == board.active && len(board.squares) != 0 && !board.IsWon() {
+	if NilPiece() == board.GetActive() && len(board.squares) != 0 && !board.IsWon() {
 		return false, errors.New("active piece required")
 	}
-	if board.active == Pieces.ZERO && len(board.pieces) != 0 && !board.IsWon(){
+	if board.GetActive() == NilPiece() && len(board.pieces) != 0 && !board.IsWon(){
 		return false, errors.New("cannot set ZERO piece as active unless the game is won")
 	}
 	//TODO other probs
@@ -103,8 +111,42 @@ func (board *board) setActive(piece Piece) {
 	board.active = piece
 }
 
+func (board *board) GetActive() Piece {
+	return board.active
+}
+
+func (board *board) String() string{
+	s := "|"
+	h := 1
+	v := 1
+	for h <= 4 {
+		for v <= 4 {
+			if piece, ok := board.squares[Square{h, v}]; ok {
+				s += piece.String() + "|"
+			} else {
+				s += NilPiece().String() + "|"
+			}
+			if v == 4{
+				s += "\n"
+			}
+			v++
+		}
+		if h != 4 && v != 4 {
+			s += "|"
+		}
+		h++
+		v = 1
+	}
+
+	return s
+}
+
 func NewBoard(id string) Quarto {
-	return &board {id, make(map[Square]Piece), make(map[Piece]bool), make(map[line]int), Pieces.ZERO}
+	return &board {id, make(map[Square]Piece), make(map[Piece]bool), make(map[line]int), NilPiece()}
+}
+
+func NilBoard() Quarto {
+	return NewBoard("nil")
 }
 
 func InProgBoard(id string, squares map[Square]Piece, active Piece) Quarto {
@@ -143,81 +185,132 @@ func getLines(piece Piece, h int, v int) []line{
 		dline = "d2"
 	}
 
-	lines = append(lines, line{hline, piece.getColor()})
-	lines = append(lines, line{hline, piece.getHeight()})
-	lines = append(lines, line{hline, piece.getShape()})
-	lines = append(lines, line{hline, piece.getTop()})
+	lines = append(lines, line{hline, piece.GetColor()})
+	lines = append(lines, line{hline, piece.GetHeight()})
+	lines = append(lines, line{hline, piece.GetShape()})
+	lines = append(lines, line{hline, piece.GetTop()})
 
-	lines = append(lines, line{vline, piece.getColor()})
-	lines = append(lines, line{vline, piece.getHeight()})
-	lines = append(lines, line{vline, piece.getShape()})
-	lines = append(lines, line{vline, piece.getTop()})
+	lines = append(lines, line{vline, piece.GetColor()})
+	lines = append(lines, line{vline, piece.GetHeight()})
+	lines = append(lines, line{vline, piece.GetShape()})
+	lines = append(lines, line{vline, piece.GetTop()})
 
 	if dline != "" {
-		lines = append(lines, line{dline, piece.getColor()})
-		lines = append(lines, line{dline, piece.getHeight()})
-		lines = append(lines, line{dline, piece.getShape()})
-		lines = append(lines, line{dline, piece.getTop()})
+		lines = append(lines, line{dline, piece.GetColor()})
+		lines = append(lines, line{dline, piece.GetHeight()})
+		lines = append(lines, line{dline, piece.GetShape()})
+		lines = append(lines, line{dline, piece.GetTop()})
 	}
 
 	return lines
 }
 
+type color string
+type height string
+type shape string
+type top string
+
+type Attribute interface{
+	AttrStr() string
+}
+
+func (color color) AttrStr() string {
+	return string(color)
+}
+
+func (height height) AttrStr() string {
+	return string(height)
+}
+
+func (shape shape) AttrStr() string {
+	return string(shape)
+}
+
+func (top top) AttrStr() string {
+	return string(top)
+}
+
+
+const (
+	WHITE color = "WHITE"
+	BLACK color = "WHITE"
+	TALL height = "TALL"
+	SHORT height = "SHORT"
+	ROUND shape = "ROUND"
+	SQUARE shape = "SQUARE"
+	FLAT top = "FLAT"
+	HOLE top = "HOLE"
+)
 
 type piece struct {
-	color string
-	height string
-	shape string
-	top string
+	color color
+	height height
+	shape shape
+	top top
+}
+
+func NewPiece(color color, height height, shape shape, top top) Piece{
+	return &piece {color, height, shape, top}
+}
+
+func NilPiece() Piece {
+	return &piece {}
 }
 
 type Piece interface {
-	getColor() string
-	getHeight() string
-	getShape() string
-	getTop() string
+	GetColor() Attribute
+	GetHeight() Attribute
+	GetShape() Attribute
+	GetTop() Attribute
+	String() string
 }
 
-func (piece *piece) getColor() string{
-	return piece.color
+func (piece *piece) GetColor() Attribute {
+	return &piece.color
 }
 
-func (piece *piece) getHeight() string{
-	return piece.height
+func (piece *piece) GetHeight() Attribute {
+	return &piece.height
 }
 
-func (piece *piece) getShape() string{
-	return piece.shape
+func (piece *piece) GetShape() Attribute {
+	return &piece.shape
 }
 
-func (piece *piece) getTop() string{
-	return piece.top
+func (piece *piece) GetTop() Attribute {
+	return &piece.top
 }
 
-type pieces struct {
-	ZERO Piece
-	WTQF, WTQH, WTRF, WTRH Piece
-	WSQF, WSQH, WSRF, WSRH Piece
-	BTQF, BTQH, BTRF, BTRH Piece
-	BSQF, BSQH, BSRF, BSRH Piece
-}
+func (piece *piece) String() string{
+	var s string
+	if piece.GetColor().AttrStr() == WHITE.AttrStr() {
+		s += "W"
+	} else if piece.GetColor().AttrStr() == BLACK.AttrStr() {
+		s += "B"
+	} else {
+		s += " "
+	}
+	if piece.GetHeight().AttrStr() == TALL.AttrStr() {
+		s += "T"
+	} else if piece.GetHeight().AttrStr() == SHORT.AttrStr() {
+		s += "S"
+	} else {
+		s += " "
+	}
+	if piece.GetShape().AttrStr() == ROUND.AttrStr() {
+		s += "R"
+	} else if piece.GetShape().AttrStr() == SQUARE.AttrStr() {
+		s += "Q"
+	} else {
+		s += " "
+	}
+	if piece.GetTop().AttrStr() == FLAT.AttrStr() {
+		s += "F"
+	} else if piece.GetTop().AttrStr() == HOLE.AttrStr() {
+		s += "H"
+	} else {
+		s += " "
+	}
 
-var Pieces = pieces {
-		&piece {"zero","zero","zero","zero"},
-		&piece {"white","tall","square","flat"},
-		&piece {"white","tall","square","hole"},
-		&piece {"white","tall","round","flat"},
-		&piece {"white","tall","round","hole"},
-		&piece {"white","short","square","flat"},
-		&piece {"white","short","square","hole"},
-		&piece {"white","short","round","flat"},
-		&piece {"white","short","round","hole"},
-		&piece {"black","tall","square","flat"},
-		&piece {"black","tall","square","hole"},
-		&piece {"black","tall","round","flat"},
-		&piece {"black","tall","round","hole"},
-		&piece {"black","short","square","flat"},
-		&piece {"black","short","square","hole"},
-		&piece {"black","short","round","flat"},
-		&piece {"black","short","round","hole"},
+	return s
 }
