@@ -43,6 +43,8 @@ type Quarto interface {
 	TakeTurn(toPlace Piece, h int, v int, active Piece) error
 	Validate() (bool, error)
 	GetActive() Piece
+	GetId() string
+	GetSquares() map[Square]Piece
 	String() string
 	setSquares(squares map[Square]Piece)
 	setPieces(pieces map[Piece]bool)
@@ -116,6 +118,14 @@ func (board *board) setActive(piece Piece) {
 
 func (board *board) GetActive() Piece {
 	return board.active
+}
+
+func (board *board) GetId() string {
+	return board.id
+}
+
+func (board *board) GetSquares() map[Square]Piece {
+	return board.squares
 }
 
 func (board *board) String() string{
