@@ -1,9 +1,8 @@
 package tests
 
-import ("../quarto"
+import ("quarto-go/quarto"
 		"testing"
 		"reflect"
-	"fmt"
 )
 
 type quartoPieces struct {
@@ -56,7 +55,7 @@ func TestValidate(t *testing.T) {
 
 func TestInProgEqualityOneTurn(t *testing.T) {
 	board := quarto.NewBoard("test")
-	board, error := board.TakeTurn(pieces.WTQF,2, 3, pieces.BSQF)
+	error := board.TakeTurn(pieces.WTQF,2, 3, pieces.BSQF)
 	if error != nil {
 		t.Errorf(error.Error())
 	}
@@ -72,25 +71,22 @@ func TestInProgEqualityOneTurn(t *testing.T) {
 
 func TestWinningMove(t *testing.T) {
 	board := quarto.NewBoard("test")
-	board, error := board.TakeTurn(pieces.WTQF, 1, 1, pieces.WTQH)
+	error := board.TakeTurn(pieces.WTQF, 1, 1, pieces.WTQH)
 	if error != nil {
 		t.Errorf(error.Error())
 	}
-	board, error = board.TakeTurn(pieces.WTQH, 1, 2, pieces.WTRF)
+	error = board.TakeTurn(pieces.WTQH, 1, 2, pieces.WTRF)
 	if error != nil {
 		t.Errorf(error.Error())
 	}
-	board, error = board.TakeTurn(pieces.WTRF, 1, 3, pieces.WSQH)
+	error = board.TakeTurn(pieces.WTRF, 1, 3, pieces.WSQH)
 	if error != nil {
 		t.Errorf(error.Error())
 	}
-	board, error = board.TakeTurn(pieces.WSQH, 1, 4, pieces.NIL)
+	error = board.TakeTurn(pieces.WSQH, 1, 4, pieces.NIL)
 	if error != nil {
 		t.Errorf(error.Error())
 	}
-
-	//TODO REMOVE THIS
-	fmt.Println(board.String())
 
 	if !board.IsWon() {
 		t.Fail()
@@ -99,19 +95,19 @@ func TestWinningMove(t *testing.T) {
 
 func TestD1WinningMove(t *testing.T) {
 	board := quarto.NewBoard("test")
-	board, error := board.TakeTurn(pieces.WTQF, 1, 1, pieces.WTQH)
+	error := board.TakeTurn(pieces.WTQF, 1, 1, pieces.WTQH)
 	if error != nil {
 		t.Errorf(error.Error())
 	}
-	board, error = board.TakeTurn(pieces.WTQH, 2, 2, pieces.WTRF)
+	error = board.TakeTurn(pieces.WTQH, 2, 2, pieces.WTRF)
 	if error != nil {
 		t.Errorf(error.Error())
 	}
-	board, error = board.TakeTurn(pieces.WTRF, 3, 3, pieces.WSQH)
+	error = board.TakeTurn(pieces.WTRF, 3, 3, pieces.WSQH)
 	if error != nil {
 		t.Errorf(error.Error())
 	}
-	board, error = board.TakeTurn(pieces.WSQH, 4, 4, pieces.NIL)
+	error = board.TakeTurn(pieces.WSQH, 4, 4, pieces.NIL)
 	if error != nil {
 		t.Errorf(error.Error())
 	}
@@ -123,19 +119,19 @@ func TestD1WinningMove(t *testing.T) {
 
 func TestD2WinningMove(t *testing.T) {
 	board := quarto.NewBoard("test")
-	board, error := board.TakeTurn(pieces.WTQF, 1, 4, pieces.WTQH)
+	error := board.TakeTurn(pieces.WTQF, 1, 4, pieces.WTQH)
 	if error != nil {
 		t.Errorf(error.Error())
 	}
-	board, error = board.TakeTurn(pieces.WTQH, 2, 3, pieces.WTRF)
+	error = board.TakeTurn(pieces.WTQH, 2, 3, pieces.WTRF)
 	if error != nil {
 		t.Errorf(error.Error())
 	}
-	board, error = board.TakeTurn(pieces.WTRF, 3, 2, pieces.WSQH)
+	error = board.TakeTurn(pieces.WTRF, 3, 2, pieces.WSQH)
 	if error != nil {
 		t.Errorf(error.Error())
 	}
-	board, error = board.TakeTurn(pieces.WSQH, 4, 1, pieces.NIL)
+	error = board.TakeTurn(pieces.WSQH, 4, 1, pieces.NIL)
 	if error != nil {
 		t.Errorf(error.Error())
 	}
@@ -147,38 +143,8 @@ func TestD2WinningMove(t *testing.T) {
 
 func TestRejectZeroPieceIfNotWon(t *testing.T) {
 	board := quarto.NewBoard("test")
-	board, error := board.TakeTurn(pieces.WTQF, 1, 1, pieces.NIL)
-	if error == nil {
+	error := board.TakeTurn(pieces.WTQF, 1, 1, pieces.NIL)
+	if error != nil {
 		t.Fail()
 	}
 }
-
-//TODO this test fails
-//func TestBoardDoesntChangeAfterTakeTurn(t *testing.T) {
-//	board := quarto.NewBoard_("test")
-//	fmt.Println("BOARD", board)
-//	boardClone := quarto.NewBoard_("test")
-//	fmt.Println("CLONE", boardClone)
-//	newBoard, error := board.TakeTurn(quarto.Pieces.WTQF, 1, 4, quarto.Pieces.WTQH)
-//	fmt.Println("NEW  ", newBoard)
-//	fmt.Println()
-//	fmt.Println("BOARD", board)
-//	fmt.Println("CLONE", boardClone)
-//	fmt.Println()
-//
-//	if error != nil {
-//		t.Fail()
-//	}
-//
-//	if !reflect.DeepEqual(boardClone, board) {
-//		fmt.Println(boardClone)
-//		fmt.Println(board)
-//		t.Fail()
-//	}
-//
-//	if reflect.DeepEqual(newBoard, board) {
-//		t.Fail()
-//	}
-//}
-
-//TODO test that underlying board is not modified during take turn
