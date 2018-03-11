@@ -141,7 +141,7 @@ func TestD2WinningMove(t *testing.T) {
 	}
 }
 
-func TestRejectZeroPieceIfNotWon(t *testing.T) {
+func TestRejectNilPieceIfNotWon(t *testing.T) {
 	board := quarto.NewBoard("test")
 	error := board.TakeTurn(pieces.WTQF, 1, 1, pieces.NIL)
 	if error != nil {

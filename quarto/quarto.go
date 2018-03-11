@@ -92,7 +92,7 @@ func (board *board) Validate() (bool, error) {
 		return false, errors.New("active piece required")
 	}
 	if board.GetActive() == NilPiece() && len(board.pieces) != 0 && !board.IsWon(){
-		return false, errors.New("cannot set ZERO piece as active unless the game is won")
+		return false, errors.New("cannot set nil piece as active unless the game is won")
 	}
 	//TODO other probs
 	return true, nil
