@@ -1,20 +1,20 @@
 package utils
 
 import (
-	"os"
 	"io/ioutil"
 	"encoding/json"
 	"fmt"
+	"log"
 )
 
 // reflects exact structure for marshalling
 type raw struct {
-	envs []env
+	Envs []env
 }
 
 type env struct {
-	name string
-	dBConnString string
+	Name string
+	DBConnString string
 }
 
 type config struct {
@@ -24,8 +24,8 @@ type config struct {
 func Load() Config {
 	fileContents, err := ioutil.ReadFile("../config.json")
 	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
+		log.Fatal(err.Error())
+		return &config{}
 	}
 
 	var file raw
@@ -34,12 +34,9 @@ func Load() Config {
 		fmt.Println(err)
 	}
 
-	//TODO DEL
-	fmt.Println(file)
-
 	var envMap = make(map[string]env)
-	for _, v := range file.envs {
-		envMap[v.name] = v
+	for _, v := range file.Envs {
+		envMap[v.Name] = v
 	}
 
 	return &config{envMap}
@@ -50,5 +47,5 @@ type Config interface {
 }
 
 func (c *config) GetDBConnString(env string) string {
-	return c.envs[env].dBConnString
+	return c.envs[env].DBConnString
 }

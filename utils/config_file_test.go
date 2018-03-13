@@ -8,7 +8,7 @@ import (
 
 func TestNewBoardActivePieceIsNilPiece(t *testing.T) {
 	config := Load()
-	connString := config.GetDBConnString("test")
+	connString := config.GetDBConnString("dev")
 	if reflect.TypeOf(connString) != reflect.TypeOf("") {
 		t.Fail()
 	}
