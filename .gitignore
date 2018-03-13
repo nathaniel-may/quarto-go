@@ -3,6 +3,3 @@
 
 #mac
 .DS_Store
-
-#don't store passwords in git
-config.json
