@@ -2,19 +2,29 @@ package dal
 
 import (
 	"testing"
-	//"quarto-go/quarto"
+	"quarto-go/utils"
 )
 
 func (dal *mongoDal) mockGetBoardId() string {
 	return "test"
 }
 
-func TestCreatesAndLoadsGame(t *testing.T) {
-	d, err := NewDal()
+var d Dal
+
+func TestNewDal(t *testing.T) {
+	config := utils.LoadConfig("dev")
+	d, err := NewDal(config.GetDBConnString(), config.GetDB())
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
+	//not expected to happen, I just have to use the variable to set it here
+	if d == nil {
+		t.Fail()
+	}
+}
+
+func TestCreatesAndLoadsGame(t *testing.T) {
 	createdGame, err := d.CreateGame()
 	if err != nil {
 		t.Errorf(err.Error())
@@ -28,24 +38,4 @@ func TestCreatesAndLoadsGame(t *testing.T) {
 	if createdGame.GetId() != loadedGame.GetId() {
 		t.Fail()
 	}
-}
-
-// mongo driver (alpha) has no client.Close() function so I am not creating new dal objects
-func TestNotCreateGameWithDupBoardId(t *testing.T) {
-	var save func(mongoDal) string
-	save = getBoardId
-	getBoardId = mongoDal.mockGetBoardId
-	d, err := NewDal()
-	_, err = d.CreateGame()
-	if err == nil {
-		t.Errorf(err.Error())
-	}
-	_, err = d.CreateGame()
-	//expect error
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-
-	//TODO does this work?
-	getBoardId = save
 }

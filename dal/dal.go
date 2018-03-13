@@ -2,11 +2,11 @@ package dal
 
 import (
 	"quarto-go/quarto"
-	"errors"
 	"github.com/mongodb/mongo-go-driver/mongo"
+	"github.com/mongodb/mongo-go-driver/bson"
+	"errors"
 	"context"
 	"log"
-	"github.com/mongodb/mongo-go-driver/bson"
 )
 
 type mongoDal struct {
@@ -14,15 +14,12 @@ type mongoDal struct {
 	quartoCol *mongo.Collection
 }
 
-//makes this function mockable for tests
-var getBoardId = mongoDal.getBoardId
-
-func NewDal() (Dal, error) {
-	//TODO get from file using aws absolute path from built-in sys var
-	client, err := mongo.NewClient("mongodb://localhost:27017,localhost:27018,localhost:27019/?replicaSet=repl0&w=majority")
+func NewDal(connString string, database string) (Dal, error) {
+	client, err := mongo.NewClient(connString)
 	if err != nil {
 		return &mongoDal{}, err
 	}
+
 	return &mongoDal{client, client.Database("quartoTest").Collection("quartoTest")}, nil
 }
 
@@ -33,16 +30,13 @@ type Dal interface {
 }
 
 func (dal *mongoDal) CreateGame() (quarto.Quarto, error) {
-	//TODO randomize
-	var boardId string
-	boardId = getBoardId(*dal)
-	_, err := dal.quartoCol.InsertOne(context.Background(), map[string]string{"boardId": boardId})
+	var game quarto.Quarto
+	game = quarto.NewBoard(dal.getBoardId())
+	err := dal.SaveGame(game)
 	if err != nil {
-		log.Fatal(err)
 		return quarto.NilBoard(), err
 	}
-
-	return quarto.NewBoard(boardId), nil
+	return game, nil
 }
 
 func (dal *mongoDal) LoadGame(boardId string) (quarto.Quarto, error) {
@@ -54,10 +48,15 @@ func (dal *mongoDal) LoadGame(boardId string) (quarto.Quarto, error) {
 		return quarto.NilBoard(), errors.New("error finding board with boardId " + boardId)
 	}
 
-	var game quarto.Quarto
-	game, err = bsonDocToQuarto(*result)
+	resultBytes, err := bson.Marshal(result)
 	if err != nil {
-		return quarto.NilBoard(), errors.New("error creating quarto board from document with boardId " + boardId)
+		return quarto.NilBoard(), err
+	}
+
+	var game quarto.Quarto
+	err = bson.Unmarshal(resultBytes, &game)
+	if err != nil {
+		return quarto.NilBoard(), err
 	}
 
 	return game, nil
@@ -65,8 +64,26 @@ func (dal *mongoDal) LoadGame(boardId string) (quarto.Quarto, error) {
 
 // schema is defined here
 func (dal *mongoDal) SaveGame(game quarto.Quarto) error {
+	game = quarto.NewBoard(dal.getBoardId())
 
-	//TODO STUB
+	bsonGameBytes, err := bson.Marshal(game)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	bsonGame, err := mongo.TransformDocument(bsonGameBytes)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	_, err = dal.quartoCol.InsertOne(context.Background(), bsonGame)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
 	return nil
 }
 
@@ -75,34 +92,6 @@ func (dal *mongoDal) getBoardId() string {
 	boardId := "test"
 
 	return boardId
-}
-
-// schema is defined here
-func bsonDocToQuarto(doc bson.Document) (quarto.Quarto, error) {
-
-	//TODO STUB
-	return quarto.NilBoard(), nil
-}
-
-// schema is defined here
-func quartoToBsonDoc(game quarto.Quarto) (bson.Document, error) {
-	var doc *bson.Document
-
-	var piecesArray []bson.Document
-	var pieceDoc bson.Document
-	for square, piece := range game.GetSquares() {
-		//TODO figure out how to save ints
-		pieceDoc = *bson.NewDocument(bson.EC.Int32("H", square.H))
-	}
-
-
-	boardId := bson.EC.String("boardId", game.GetId())
-	pieces := bson.EC.Array()
-	doc = bson.NewDocument(boardId, pieces)
-	doc.Append()
-	//TODO STUB
-
-	return *doc, nil
 }
 
 
