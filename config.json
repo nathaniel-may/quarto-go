@@ -1,0 +1,12 @@
+{
+  "envs" : [
+    {
+      "name" : "dev",
+      "dBConnString" : "mongodb+srv://<USER>:<PASSWORD>@cluster0-vwgrk.mongodb.net/quartoTest"
+    },
+    {
+      "name" : "prod",
+      "dBConnString" : "mongodb+srv://<USER>:<PASSWORD>@cluster0-vwgrk.mongodb.net/quartoProd"
+    }
+  ]
+}
