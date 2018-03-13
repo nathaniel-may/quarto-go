@@ -23,7 +23,8 @@ type config struct {
 	envs map[string]env
 }
 
-func Load(envName string) Config {
+func LoadConfig(envName string) Config {
+	//TODO get from file using aws absolute path from built-in sys var
 	fileContents, err := ioutil.ReadFile("../config.json")
 	if err != nil {
 		log.Fatal(err.Error())
