@@ -2,11 +2,13 @@
   "envs" : [
     {
       "name" : "dev",
-      "dBConnString" : "mongodb+srv://<USER>:<PASSWORD>@cluster0-vwgrk.mongodb.net/quartoTest"
+      "dBConnString" : "mongodb+srv://<USER>:<PASSWORD@cluster0-vwgrk.mongodb.net/quartoTest?retryWrites=true",
+      "db" : "quartoTest"
     },
     {
       "name" : "prod",
-      "dBConnString" : "mongodb+srv://<USER>:<PASSWORD>@cluster0-vwgrk.mongodb.net/quartoProd"
+      "dBConnString" : "mongodb+srv://<USER>:<PASSWORD>@cluster0-vwgrk.mongodb.net/quartoProd?retryWrites=true",
+      "db" : "quartoProd"
     }
   ]
 }
