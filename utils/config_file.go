@@ -15,13 +15,15 @@ type raw struct {
 type env struct {
 	Name string
 	DBConnString string
+	Db string
 }
 
 type config struct {
+	envName string
 	envs map[string]env
 }
 
-func Load() Config {
+func Load(envName string) Config {
 	fileContents, err := ioutil.ReadFile("../config.json")
 	if err != nil {
 		log.Fatal(err.Error())
@@ -39,13 +41,18 @@ func Load() Config {
 		envMap[v.Name] = v
 	}
 
-	return &config{envMap}
+	return &config{envName, envMap}
 }
 
 type Config interface {
-	GetDBConnString(env string) string
+	GetDBConnString() string
+	GetDB() string
 }
 
-func (c *config) GetDBConnString(env string) string {
-	return c.envs[env].DBConnString
+func (c *config) GetDBConnString() string {
+	return c.envs[c.envName].DBConnString
+}
+
+func (c *config) GetDB() string {
+	return c.envs[c.envName].Db
 }
