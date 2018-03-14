@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"errors"
 )
 
 // Lambda function handler
@@ -10,9 +11,9 @@ func NewGameHandler(request events.APIGatewayProxyRequest) (events.APIGatewayPro
 
 	//TODO use SNS to call the dal lambda function to create a new game
 
-	// If no name is provided in the HTTP request body, throw an error
-	if len(request.Body) < 1 {
-		return events.APIGatewayProxyResponse{}, ErrNameNotProvided
+	// only empty body accepted
+	if len(request.Body) > 0 {
+		return events.APIGatewayProxyResponse{}, errors.New("bad request")
 	}
 
 	//TODO return json representation of the game (new package)

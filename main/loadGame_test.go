@@ -5,16 +5,16 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 )
 
-func TestNewGameHandler(t *testing.T) {
+func TestLoadGameHandler(t *testing.T) {
 	//TODO "goify" with input/expect pairs
 	var response events.APIGatewayProxyResponse
-	response, err := NewGameHandler(events.APIGatewayProxyRequest{})
+	response, err := NewGameHandler(events.APIGatewayProxyRequest{}) //TODO add boardId to body
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
 	//TODO STUB
-	if response.Body != "a json representation of a blank board" {
+	if response.Body != "a json representation of the correct board" {
 		t.Fail()
 	}
 }
