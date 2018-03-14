@@ -6,7 +6,7 @@ Developement is currently paused until the mongo driver implements the 3.6 wire 
 
 ## Stack
 
-GUI - TBD
+GUI - TBD  
 AWS API Gateway  
 AWS Lambda Functions - Go  
 MongoDB Go Driver (alpha)  
