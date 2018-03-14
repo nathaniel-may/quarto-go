@@ -7,6 +7,7 @@ import (
 	"errors"
 	"context"
 	"log"
+	"fmt"
 )
 
 type mongoDal struct {
@@ -20,7 +21,11 @@ func NewDal(connString string, database string) (Dal, error) {
 		return &mongoDal{}, err
 	}
 
-	return &mongoDal{client, client.Database("quartoTest").Collection("quartoTest")}, nil
+	return &mongoDal{client, client.Database(database).Collection("games")}, nil
+}
+
+func NilDal() Dal {
+	return &mongoDal{}
 }
 
 type Dal interface {
@@ -30,12 +35,18 @@ type Dal interface {
 }
 
 func (dal *mongoDal) CreateGame() (quarto.Quarto, error) {
+	fmt.Println("created called")
 	var game quarto.Quarto
 	game = quarto.NewBoard(dal.getBoardId())
+	fmt.Println("game created not saved")
+	fmt.Println("col: ", dal.quartoCol)
 	err := dal.SaveGame(game)
+	fmt.Println("game created, saved, err not checked")
 	if err != nil {
 		return quarto.NilBoard(), err
 	}
+
+	fmt.Println("created and saved")
 	return game, nil
 }
 
@@ -78,6 +89,7 @@ func (dal *mongoDal) SaveGame(game quarto.Quarto) error {
 		return err
 	}
 
+	fmt.Println("col in save: ", dal.quartoCol)
 	_, err = dal.quartoCol.InsertOne(context.Background(), bsonGame)
 	if err != nil {
 		log.Fatal(err)
