@@ -52,6 +52,8 @@ type Quarto interface {
 	setActive(piece Piece)
 }
 
+var singletonNilBoard = &board{}
+
 func (board *board) IsWon() bool{
 	for _, count := range board.lines{
 		if count >= 4 {
@@ -159,7 +161,7 @@ func NewBoard(id string) Quarto {
 }
 
 func NilBoard() Quarto {
-	return NewBoard("nil")
+	return singletonNilBoard
 }
 
 func InProgBoard(id string, squares map[Square]Piece, active Piece) Quarto {
