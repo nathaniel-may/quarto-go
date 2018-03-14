@@ -3,64 +3,52 @@ package dal
 import (
 	"testing"
 	"quarto-go/utils"
-	"fmt"
 )
+
+var config = utils.LoadConfig("dev")
 
 func (dal *mongoDal) mockGetBoardId() string {
 	return "test"
 }
 
-var d = NilDal()
-
-func getDal() (Dal, error) {
-	if d != NilDal() {
-		config := utils.LoadConfig("dev")
-		d, err := NewDal(config.GetDBConnString(), config.GetDB())
-		if err != nil {
-			return NilDal(), err
-		}
-		return d, nil
-	}
-	return d, nil
-}
-
 func TestNewDal(t *testing.T) {
-	storage, err := getDal()
+	d, err := NewDal(config.GetDBConnString(), config.GetDB())
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
-	//not expected to happen, I just have to use the variable to set it here
-	if storage == nil {
+	if d == NilDal() {
+		t.Fail()
+	}
+}
+
+func TestNewDalTwice(t *testing.T) {
+	d, err := NewDal(config.GetDBConnString(), config.GetDB())
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if d == NilDal() {
 		t.Fail()
 	}
 }
 
 func TestCreatesAndLoadsGame(t *testing.T) {
-	fmt.Println("started")
-	storage, err := getDal()
+	d, err := NewDal(config.GetDBConnString(), config.GetDB())
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	createdGame, err := storage.CreateGame()
-	fmt.Println("before err checker")
-	if err != nil {
-		fmt.Println("inside err checker")
-		t.Errorf(err.Error())
-	}
-
-	fmt.Println("created")
-
-	loadedGame, err := storage.LoadGame(createdGame.GetId())
+	createdGame, err := d.CreateGame()
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
-	fmt.Println("loaded")
+	loadedGame, err := d.LoadGame(createdGame.GetId())
+	if err != nil {
+		t.Errorf(err.Error())
+	}
 
 	if createdGame.GetId() != loadedGame.GetId() {
 		t.Fail()
 	}
-
-	fmt.Println("finished")
 }

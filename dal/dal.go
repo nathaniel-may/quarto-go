@@ -7,8 +7,12 @@ import (
 	"errors"
 	"context"
 	"log"
-	"fmt"
+	"sync"
 )
+
+var singletonDal = NilDal()
+var singletonNil = mongoDal{}
+var once sync.Once
 
 type mongoDal struct {
 	client *mongo.Client
@@ -16,16 +20,24 @@ type mongoDal struct {
 }
 
 func NewDal(connString string, database string) (Dal, error) {
-	client, err := mongo.NewClient(connString)
-	if err != nil {
-		return &mongoDal{}, err
+
+	var clientErr error
+	once.Do(func() {
+		client, err := mongo.NewClient(connString)
+		if err != nil {
+			clientErr = err
+		}
+		singletonDal = &mongoDal{client, client.Database(database).Collection("games")}
+	})
+	if clientErr != nil {
+		return NilDal(), clientErr
 	}
 
-	return &mongoDal{client, client.Database(database).Collection("games")}, nil
+	return singletonDal, nil
 }
 
 func NilDal() Dal {
-	return &mongoDal{}
+	return &singletonNil
 }
 
 type Dal interface {
@@ -34,27 +46,44 @@ type Dal interface {
 	SaveGame(quarto.Quarto) error
 }
 
+func CheckNilReceiver(receiver interface{}, fName string) error {
+	nilDal := NilDal()
+	if receiver == nil || receiver == nilDal {
+		return errors.New("create game called with nil receiver")
+	}
+	return nil
+}
+
 func (dal *mongoDal) CreateGame() (quarto.Quarto, error) {
-	fmt.Println("created called")
-	var game quarto.Quarto
-	game = quarto.NewBoard(dal.getBoardId())
-	fmt.Println("game created not saved")
-	fmt.Println("col: ", dal.quartoCol)
-	err := dal.SaveGame(game)
-	fmt.Println("game created, saved, err not checked")
+	err := CheckNilReceiver(dal, "CreateGame")
 	if err != nil {
 		return quarto.NilBoard(), err
 	}
 
-	fmt.Println("created and saved")
+	var game quarto.Quarto
+	boardId, err := dal.getBoardId()
+	if err != nil {
+		return quarto.NilBoard(), err
+	}
+	game = quarto.NewBoard(boardId)
+	err = dal.SaveGame(game)
+	if err != nil {
+		return quarto.NilBoard(), err
+	}
+
 	return game, nil
 }
 
 func (dal *mongoDal) LoadGame(boardId string) (quarto.Quarto, error) {
+	err := CheckNilReceiver(dal, "LoadGame")
+	if err != nil {
+		return quarto.NilBoard(), err
+	}
+
 	//TODO retry
 	result := bson.NewDocument()
 	filter := bson.NewDocument(bson.EC.String("boardId", boardId))
-	err := dal.quartoCol.FindOne(context.Background(), filter).Decode(result)
+	err = dal.quartoCol.FindOne(context.Background(), filter).Decode(result)
 	if err != nil {
 		return quarto.NilBoard(), errors.New("error finding board with boardId " + boardId)
 	}
@@ -75,7 +104,16 @@ func (dal *mongoDal) LoadGame(boardId string) (quarto.Quarto, error) {
 
 // schema is defined here
 func (dal *mongoDal) SaveGame(game quarto.Quarto) error {
-	game = quarto.NewBoard(dal.getBoardId())
+	err := CheckNilReceiver(dal, "SaveGame")
+	if err != nil {
+		return err
+	}
+
+	boardId, err := dal.getBoardId()
+	if err != nil {
+		return err
+	}
+	game = quarto.NewBoard(boardId)
 
 	bsonGameBytes, err := bson.Marshal(game)
 	if err != nil {
@@ -89,7 +127,6 @@ func (dal *mongoDal) SaveGame(game quarto.Quarto) error {
 		return err
 	}
 
-	fmt.Println("col in save: ", dal.quartoCol)
 	_, err = dal.quartoCol.InsertOne(context.Background(), bsonGame)
 	if err != nil {
 		log.Fatal(err)
@@ -99,11 +136,16 @@ func (dal *mongoDal) SaveGame(game quarto.Quarto) error {
 	return nil
 }
 
-func (dal *mongoDal) getBoardId() string {
+func (dal *mongoDal) getBoardId() (string, error){
+	err := CheckNilReceiver(dal, "CreateGame")
+	if err != nil {
+		return "", err
+	}
+
 	//TODO randomize
 	boardId := "test"
 
-	return boardId
+	return boardId, nil
 }
 
 
